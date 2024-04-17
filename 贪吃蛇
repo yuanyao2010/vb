@@ -1,0 +1,271 @@
+'定义颜色
+Private Type Color
+    R As Integer '红色
+    G As Integer '绿色
+    B As Integer '蓝色
+End Type
+
+Private Type Node '每一节蛇身
+    D As Integer '37左38上39右40下
+    X As Single 'left
+    Y As Single 'top
+    C As Color '颜色
+End Type
+Dim W As Integer '每一节蛇身宽度
+Dim currentDirect As Integer
+Dim n As Long '蛇身节点数
+Private WithEvents timer1 As Timer
+Private WithEvents lblscore As Label '分数
+Private WithEvents lblinfo As Label
+Dim score As Long
+
+Private Type Food
+    X As Single
+    Y As Single
+    C As Color
+End Type
+
+'声明食物
+Dim goods As Food
+
+
+Dim sno() As Node '声明一条蛇，是动态数组
+'初始化
+Function init()
+
+'WindowState = 2
+AutoRedraw = True
+W = 200
+n = 5
+currentDirect = 39 '默认右
+ReDim sno(n) As Node
+
+'初始化蛇身颜色
+Randomize
+Dim R%, G%, B%
+R = Int(Rnd * 256)
+G = Int(Rnd * 256)
+B = Int(Rnd * 256)
+
+Dim i As Long
+For i = 1 To UBound(sno) Step 1
+
+    sno(i).D = currentDirect
+    sno(i).X = ScaleWidth / 2 + i * W
+    sno(i).Y = ScaleHeight / 2
+    
+    sno(i).C.R = R
+    sno(i).C.G = G
+    sno(i).C.B = B
+Next i
+
+'初始化食物
+Call rndFood
+'画食物
+Call drawFood
+    
+End Function
+
+
+
+Private Sub Form_KeyPress(KeyAscii As Integer)
+If KeyAscii = 32 And timer1.Enabled = True Then
+    timer1.Enabled = False
+    lblinfo.Visible = True
+Else
+    timer1.Enabled = True
+    lblinfo.Visible = False
+End If
+
+End Sub
+
+Private Sub Form_KeyUp(KeyCode As Integer, Shift As Integer)
+If Abs(currentDirect - KeyCode) <> 2 And Abs(currentDirect - KeyCode) < 4 _
+Then currentDirect = KeyCode
+
+End Sub
+
+Private Sub Form_Load()
+Call init
+Call drawSnake
+
+Set timer1 = Controls.Add("vb.timer", "timer1")
+timer1.Interval = 100
+timer1.Enabled = True
+
+Set lblscore = Controls.Add("vb.label", "lblscore")
+lblscore.AutoSize = True
+lblscore.BackStyle = vbTransparent
+lblscore.Caption = "得分" & score
+lblscore.Move 100, 100
+
+lblscore.Visible = True
+Set lblinfo = Controls.Add("vb.label", "libinfo")
+lblinfo.AutoSize = True
+lblinfo.BackStyle = vbTransparent
+lblinfo.Caption = "暂停，按空格键开始"
+lblinfo.FontSize = 20
+lblinfo.Move ScaleWidth / 2 - lblinfo.Width / 2, ScaleHeight / 2 - lblinfo.Height
+lblinfo.Visible = False
+
+End Sub
+'插入头节点，删除尾结点
+Function sport()
+
+Dim i As Long
+
+For i = 1 To UBound(sno) Step 1
+
+    sno(i - 1) = sno(i)
+    
+Next i
+
+If currentDirect = 37 Then
+    sno(UBound(sno)).X = sno(UBound(sno)).X - W '左
+    
+ElseIf currentDirect = 38 Then
+    sno(UBound(sno)).Y = sno(UBound(sno)).Y - W  '上
+ElseIf currentDirect = 39 Then
+    sno(UBound(sno)).X = sno(UBound(sno)).X + W '右
+
+ElseIf currentDirect = 40 Then
+    sno(UBound(sno)).Y = sno(UBound(sno)).Y + W '下
+
+End If
+
+
+End Function
+
+'随机生产食物
+
+Function rndFood()
+
+Randomize
+goods.X = Int(Rnd * (ScaleWidth - W))
+goods.Y = Int(Rnd * (ScaleHeight - W))
+goods.C.R = Int(Rnd * 256)
+goods.C.G = Int(Rnd * 256)
+goods.C.B = Int(Rnd * 256)
+End Function
+
+
+'画食物
+Function drawFood()
+Line (goods.X, goods.Y)-(goods.X + W, goods.Y + W), RGB(goods.C.R, goods.C.G, goods.C.B), BF
+End Function
+
+
+'画一条蛇
+Function drawSnake()
+Cls
+Dim i As Long
+For i = 0 To UBound(sno) Step 1
+  
+  Line (sno(i).X, sno(i).Y)-(sno(i).X + W, sno(i).Y + W), RGB(sno(i).C.R, sno(i).C.G, sno(i).C.B), BF
+  
+   
+ Next i
+  
+
+End Function
+
+Private Sub timer1_Timer()
+Call sport
+Call drawSnake
+
+If isCrashWall Then
+ 
+ If MsgBox("GAME OVER !是否重新开始?", vbYesNo, "游戏结束") = vbYes Then
+    Call init
+ Else
+    End
+ 
+ End If
+End If
+ Call drawFood
+ 
+ If isEatFood Then
+   ' MsgBox "吃到"
+   ' timer1.Enabled = False
+    n = n + 1
+    score = score + 1
+    lblscore.Caption = "得分：" & score
+    ReDim Preserve sno(n)
+    '头部添加
+'    sno(UBound(sno)).D = currentDirect
+'    sno(n).C.R = goods.C.R
+'    sno(n).C.G = goods.C.G
+'    sno(n).C.B = goods.C.B
+'    If currentDirect = 37 Then
+'        sno(n).X = sno(n - 1).X - W
+'        sno(n).Y = sno(n - 1).Y
+'    ElseIf currentDirect = 39 Then
+'        sno(n).X = sno(n - 1).X + W
+'        sno(n).Y = sno(n - 1).Y
+'    ElseIf currentDirect = 38 Then
+'        sno(n).X = sno(n - 1).X
+'        sno(n).Y = sno(n - 1).Y - W
+'    ElseIf currentDirect = 40 Then
+'        sno(n).X = sno(n - 1).X
+'        sno(n).Y = sno(n - 1).Y + W
+'尾巴添加,往后一格
+    Dim i As Long
+    For i = n To 1 Step -1
+    
+        sno(i) = sno(i - 1)
+    Next i
+    If currentDirect = 37 Then
+        sno(0).X = sno(0).X + W
+        sno(0).Y = sno(0).Y
+    ElseIf currentDirect = 39 Then
+        sno(0).X = sno(0).X - W
+        sno(0).Y = sno(0).Y
+    ElseIf currentDirect = 38 Then
+        sno(0).X = sno(0).X
+        sno(0).Y = sno(0).Y + W
+    ElseIf currentDirect = 40 Then
+        sno(0).X = sno(0).X
+        sno(0).Y = sno(0).Y - W
+    
+    End If
+    sno(n).C.R = goods.C.R
+    sno(n).C.G = goods.C.G
+    sno(n).C.B = goods.C.B
+    '再次生成食物
+    Call rndFood
+ End If
+ 
+   
+End Sub
+'是否撞到窗体边缘
+
+Function isCrashWall() As Boolean
+
+isCrashWall = False
+
+
+If sno(UBound(sno)).X + W > ScaleWidth _
+    Or sno(UBound(sno)).X < 0 _
+    Or sno(UBound(sno)).Y < 0 _
+    Or sno(UBound(sno)).Y + W > ScaleHeight Then
+        isCrashWall = True
+End If
+
+End Function
+
+'是否吃到食物
+Function isEatFood()
+
+isEatFood = False
+
+If sno(UBound(sno)).X + W > goods.X _
+   And sno(UBound(sno)).X < goods.X + W _
+   And sno(UBound(sno)).Y + W > goods.Y _
+   And sno(UBound(sno)).Y < goods.Y + W Then
+    isEatFood = True
+End If
+   
+
+End Function
+
+
